@@ -17,7 +17,7 @@ Checar manualmente se um site está no ar é lento e não escala: alguém precis
 
 - **Bash + curl**: verificação HTTP (`health_check.sh`)
 - **Docker**: containeriza o script
-- **Docker Compose**: sobe Prometheus e Grafana (ver Roadmap)
+- **Docker Compose**: sobe o health check (em loop, com log em volume) junto com Prometheus e Grafana. A integração das métricas ainda está no Roadmap
 - **GitHub Actions**: builda a imagem a cada push na `main`
 
 ## Como rodar
@@ -33,13 +33,19 @@ docker compose up -d
 docker compose logs -f health-check
 ```
 
+O `.env` deve ter uma linha por variável, no formato `NOME=valor`, sem aspas e sem espaços em volta do `=`:
+
+- `SLACK_WEBHOOK_URL`: URL do webhook do Slack (opcional; sem ela o monitor só registra em log)
+- `SITES`: URLs a monitorar, separadas por espaço (sem ela, o monitor usa `https://example.com`)
+
 O health check roda em loop (uma rodada por minuto) e grava o log em `./logs/`.
 
 ## Estrutura
 
 - `health_check.sh`: checagem HTTP, retry e alerta no Slack
 - `Dockerfile`: containeriza o script
-- `docker-compose.yml`: sobe Prometheus e Grafana com restart automático
+- `docker-compose.yml`: sobe o health check, Prometheus e Grafana, com restart automático
+- `.env.example`: modelo da configuração (o `.env` real fica fora do Git)
 - `.github/workflows/`: pipeline de CI
 
 ## Roadmap
@@ -47,7 +53,9 @@ O health check roda em loop (uma rodada por minuto) e grava o log em `./logs/`.
 - [x] Ler a URL do webhook de um `.env` (com `.env.example`)
 - [x] Persistir o log em volume
 - [x] Tratar redirects (`curl -L`) e definir timeout (`--max-time`)
-- [ ] Mover a lista de sites para um arquivo de configuração
+- [x] Receber a lista de sites por variável de ambiente (`SITES`)
+- [ ] Avisar no log quando o webhook não estiver configurado ou quando o padrão `example.com` for usado
+- [ ] Evitar alerta repetido a cada minuto enquanto o site continua fora do ar
 - [ ] Expor métricas para o Prometheus e montar um dashboard no Grafana
 
 
